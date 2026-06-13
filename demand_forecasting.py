@@ -1,7 +1,3 @@
-# ============================================================
-# DEMAND FORECASTING WITH EXPLAINABLE AI (SHAP)
-# Bhavika Gungurthi | Iowa State University | 2026
-# ============================================================
 
 import pandas as pd
 import numpy as np
@@ -14,10 +10,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import shap
 
-# ============================================================
-# STEP 1: DATA LOADING & EXPLORATION
-# ============================================================
-print("=" * 60)
 print("STEP 1: DATA LOADING & EXPLORATION")
 print("=" * 60)
 
@@ -29,56 +21,43 @@ print(df.info())
 print("\nSummary Statistics:")
 print(df.describe())
 
-# ============================================================
-# STEP 2: DATA PREPROCESSING
-# ============================================================
 print("\n" + "=" * 60)
 print("STEP 2: DATA PREPROCESSING")
 print("=" * 60)
 
-# Check missing values
+
 print("\nMissing values:")
 print(df.isnull().sum())
 
-# Check duplicates
+
 print(f"\nDuplicate rows: {df.duplicated().sum()}")
 
-# Convert Month to datetime
+
 df['Month'] = pd.to_datetime(df['Month'])
 print("\nDate column converted to datetime successfully.")
 
-# ============================================================
-# STEP 3: FEATURE ENGINEERING
-# ============================================================
+
 print("\n" + "=" * 60)
 print("STEP 3: FEATURE ENGINEERING")
 print("=" * 60)
 
-# Extract time-based features
 df['Year']  = df['Month'].dt.year
 df['Month_Num'] = df['Month'].dt.month
 
-# Create total demand (target variable)
 df['Demand'] = df[['Clothing', 'Appliances', 'FoodAndBeverage',
                     'Automobiles', 'GeneralMerchandise', 'BuildingMaterials']].sum(axis=1)
 
-# Add lag features to capture trends
 df['Lag_1'] = df['Demand'].shift(1)
 df['Lag_2'] = df['Demand'].shift(2)
 df['Lag_3'] = df['Demand'].shift(3)
 
-# Rolling mean
 df['Rolling_Mean_3'] = df['Demand'].shift(1).rolling(window=3).mean()
 
-# Drop rows with NaN from lag features
 df.dropna(inplace=True)
 
 print(f"\nFeatures created: Year, Month_Num, Lag_1, Lag_2, Lag_3, Rolling_Mean_3")
 print(f"Dataset shape after feature engineering: {df.shape}")
 
-# ============================================================
-# STEP 4: EDA - EXPLORATORY DATA ANALYSIS
-# ============================================================
 print("\n" + "=" * 60)
 print("STEP 4: EXPLORATORY DATA ANALYSIS")
 print("=" * 60)
@@ -93,9 +72,6 @@ plt.savefig('eda_demand_trend.png', dpi=150)
 plt.show()
 print("EDA chart saved: eda_demand_trend.png")
 
-# ============================================================
-# STEP 5: MODEL TRAINING
-# ============================================================
 print("\n" + "=" * 60)
 print("STEP 5: MODEL TRAINING")
 print("=" * 60)
@@ -103,9 +79,6 @@ print("=" * 60)
 features = ['Year', 'Month_Num', 'Clothing', 'Appliances', 'FoodAndBeverage',
             'Automobiles', 'GeneralMerchandise', 'BuildingMaterials',
             'Lag_1', 'Lag_2', 'Lag_3', 'Rolling_Mean_3']
-
-X = df[features]
-y = df['Demand']
 
 # 80/20 Train-Test Split
 X_train, X_test, y_train, y_test = train_test_split(
@@ -125,9 +98,6 @@ gb_model.fit(X_train, y_train)
 gb_predictions = gb_model.predict(X_test)
 print("Gradient Boosting trained successfully.")
 
-# ============================================================
-# STEP 6: MODEL EVALUATION
-# ============================================================
 print("\n" + "=" * 60)
 print("STEP 6: MODEL EVALUATION")
 print("=" * 60)
@@ -143,7 +113,6 @@ gb_r2   = r2_score(y_test, gb_predictions)
 print(f"\nRandom Forest   → MAE: {rf_mae:.2f} | RMSE: {rf_rmse:.2f} | R²: {rf_r2:.3f}")
 print(f"Gradient Boosting → MAE: {gb_mae:.2f} | RMSE: {gb_rmse:.2f} | R²: {gb_r2:.3f}")
 
-# --- Plot 1: Error Distribution ---
 errors = y_test.values - rf_predictions
 plt.figure(figsize=(8, 4))
 plt.hist(errors, bins=30, color='steelblue', edgecolor='white')
@@ -156,7 +125,6 @@ plt.savefig('error_distribution.png', dpi=150)
 plt.show()
 print("Chart saved: error_distribution.png")
 
-# --- Plot 2: Residual Plot ---
 plt.figure(figsize=(8, 4))
 plt.scatter(rf_predictions, errors, alpha=0.4, color='steelblue', s=20)
 plt.axhline(0, color='red', linestyle='--', linewidth=1.5)
@@ -168,7 +136,6 @@ plt.savefig('residual_plot.png', dpi=150)
 plt.show()
 print("Chart saved: residual_plot.png")
 
-# --- Plot 3: Model Comparison ---
 models = ['Random Forest', 'Gradient Boosting']
 r2_scores = [rf_r2, gb_r2]
 plt.figure(figsize=(7, 4))
@@ -184,9 +151,6 @@ plt.savefig('model_comparison.png', dpi=150)
 plt.show()
 print("Chart saved: model_comparison.png")
 
-# ============================================================
-# STEP 7: SHAP EXPLAINABILITY ANALYSIS
-# ============================================================
 print("\n" + "=" * 60)
 print("STEP 7: SHAP EXPLAINABILITY ANALYSIS (XAI)")
 print("=" * 60)
@@ -194,7 +158,6 @@ print("=" * 60)
 explainer   = shap.TreeExplainer(rf_model)
 shap_values = explainer.shap_values(X_test)
 
-# --- SHAP Summary Plot (Global) ---
 plt.figure()
 shap.summary_plot(shap_values, X_test, show=False)
 plt.title('SHAP Summary Plot — Feature Impact on Demand', fontsize=13, fontweight='bold')
@@ -203,7 +166,6 @@ plt.savefig('shap_summary.png', dpi=150, bbox_inches='tight')
 plt.show()
 print("Chart saved: shap_summary.png")
 
-# --- Feature Importance Plot ---
 importances = pd.Series(rf_model.feature_importances_, index=features).sort_values(ascending=True)
 plt.figure(figsize=(8, 5))
 importances.plot(kind='barh', color='steelblue')
@@ -214,9 +176,6 @@ plt.savefig('feature_importance.png', dpi=150)
 plt.show()
 print("Chart saved: feature_importance.png")
 
-# ============================================================
-# SUMMARY
-# ============================================================
 print("\n" + "=" * 60)
 print("FINAL SUMMARY")
 print("=" * 60)
